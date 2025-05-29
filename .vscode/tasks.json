@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Racing App",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "main.cpp",
+        "-o",
+        "build/Racing-App.exe",
+        "-I${workspaceFolder}/include",
+        "-L${workspaceFolder}/lib",
+        "-lsfml-graphics-2",
+        "-lsfml-window-2",
+        "-lsfml-system-2"
+
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "options": {
+        "shell": {
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "args": ["/d", "/c"]
+        }
+      }
+    }
+  ]
+}
