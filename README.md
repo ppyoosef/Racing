@@ -1,3 +1,3 @@
 # Racing App 
 
-Racing app in C++
+Racing app in C++ + SFML
