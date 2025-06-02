@@ -13,7 +13,7 @@ float camD = 0.84; // camera depth
 
 const int MAX_FORWARD_SPEED = 1000;
 const int MAX_REVERSE_SPEED = -200;
-const int ACCELERATION = 2;
+const int ACCELERATION = 1;
 const int BRAKE_DECELERATION = 5;
 const int NATURAL_DECELERATION = 5;
 
@@ -276,11 +276,9 @@ int main()
     int maxy = height;
     float x = 0, dx = 0;
 
-
     // Update speed text
     speedText.setString(std::to_string(std::abs(currentSpeed) / 10)); // Adjust divisor for display units
     speedText.setPosition(width - speedText.getLocalBounds().width - 40, 40); // Top-right with margin
-  
 
     app.draw(speedText);
 
@@ -320,15 +318,27 @@ int main()
     // carSprite.setPosition(carScreenX - carSprite.getGlobalBounds().width / 2,
     //                       carScreenY - carSprite.getGlobalBounds().height / 2);
 
+    carSprite.setOrigin(carSprite.getLocalBounds().width / 2, carSprite.getLocalBounds().height / 2);
+
     float carScreenX = width / 2;
     float carScreenY = height * 0.8f;
-    carSprite.setPosition(carScreenX - carSprite.getGlobalBounds().width / 2,
-                          carScreenY - carSprite.getGlobalBounds().height / 2);
+    carSprite.setPosition(carScreenX, carScreenY);
+
+    float carAngle = 0.0f;
+    if (Keyboard::isKeyPressed(Keyboard::Left))
+      carAngle = -3.0f; // Turn left
+    else if (Keyboard::isKeyPressed(Keyboard::Right))
+      carAngle = 3.0f; // Turn right
+    carSprite.setRotation(carAngle);
+
+    // float carScreenX = width / 2;
+    // float carScreenY = height * 0.8f;
+    // carSprite.setPosition(carScreenX - carSprite.getGlobalBounds().width / 2,
+    //                       carScreenY - carSprite.getGlobalBounds().height / 2);
 
     app.draw(carSprite);
 
     app.display();
-    
   }
 
   return 0;
