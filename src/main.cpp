@@ -2,6 +2,8 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 #include <cmath>
+#include "Speedometer.hpp"
+
 using namespace sf;
 using namespace std;
 
@@ -127,6 +129,8 @@ int main()
   speedText.setCharacterSize(96);
   speedText.setFillColor(Color::Red);
   speedText.setStyle(Text::Bold);
+
+  Speedometer speedometer(width - 120, 120, speedFont);
 
   std::vector<Line> lines;
 
@@ -281,6 +285,9 @@ int main()
     speedText.setPosition(width - speedText.getLocalBounds().width - 40, 40); // Top-right with margin
 
     app.draw(speedText);
+
+    speedometer.setSpeed(static_cast<float>(std::abs(currentSpeed)));
+    // speedometer.draw(app, speedFont);
 
     ///////draw road////////
     for (int n = startPos; n < startPos + 300; n++)

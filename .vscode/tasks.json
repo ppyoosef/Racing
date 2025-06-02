@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "g++",
       "args": [
-        "main.cpp",
+        "src/*.cpp",
         "-o",
         "build/Racing-App.exe",
         "-I${workspaceFolder}/include",
