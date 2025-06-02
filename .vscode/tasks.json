@@ -11,9 +11,10 @@
         "build/Racing-App.exe",
         "-I${workspaceFolder}/include",
         "-L${workspaceFolder}/lib",
+        "-lsfml-audio-2",
         "-lsfml-graphics-2",
         "-lsfml-window-2",
-        "-lsfml-system-2"
+        "-lsfml-system-2",
 
       ],
       "group": {

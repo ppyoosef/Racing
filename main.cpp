@@ -1,6 +1,10 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp> 
+#include <iostream>
 #include <cmath>
 using namespace sf;
+using namespace std;
+
 
 int width = 1024;
 int height = 768;
@@ -84,6 +88,24 @@ int main()
     sBackground.setTextureRect(IntRect(0,0,5000,411));
     sBackground.setPosition(-2000,0);
 
+    // --- Add player car texture and sprite ---
+    Texture carTexture;
+    carTexture.loadFromFile("images/car.png");
+    carTexture.setSmooth(true);
+    Sprite carSprite(carTexture);
+
+    // --- Load and play engine sound ---
+    Music engineSound;
+    if (!engineSound.openFromFile("sounds/engine.ogg")) {
+      std::cout << "Failed to load engine.ogg\n";
+    } else {
+      engineSound.setVolume(50); // 0-100
+      //Optionally, adjust pitch based on speed
+      // engineSound.setPitch(1.0f + speed * 0.001f);
+        engineSound.setLoop(true);
+        engineSound.play();
+    }
+
     std::vector<Line> lines;
 
     for(int i=0;i<1600;i++)
@@ -110,6 +132,7 @@ int main()
    int pos = 0;
    int H = 1500;
 
+   float camX = 0.0f;
     while (app.isOpen())
     {
         Event e;
@@ -128,6 +151,21 @@ int main()
   if (Keyboard::isKeyPressed(Keyboard::Tab)) speed*=3;
   if (Keyboard::isKeyPressed(Keyboard::W)) H+=100;
   if (Keyboard::isKeyPressed(Keyboard::S)) H-=100;
+
+  // ...inside your main loop, after updating playerX...
+  camX += (playerX * roadW - camX) * 0.1f; // 0.1f is the smoothing factor
+
+
+  // After updating speed, control the engine sound:
+  if (speed != 0) {
+    if (engineSound.getStatus() != sf::Music::Playing)
+        engineSound.play();
+  } else {
+    if (engineSound.getStatus() == sf::Music::Playing)
+        engineSound.pause();
+  }
+
+  engineSound.setPitch(1.0f + speed * 0.001f);
 
   pos+=speed;
   while (pos >= N*segL) pos-=N*segL;
@@ -148,6 +186,8 @@ int main()
    {
     Line &l = lines[n%N];
     l.project(playerX*roadW-x, camH, startPos*segL - (n>=N?N*segL:0));
+    // ...in your road projection loop, use camX instead of playerX*roadW...
+    // l.project(camX - x, camH, startPos*segL - (n>=N?N*segL:0));
     x+=dx;
     dx+=l.curve;
 
@@ -169,6 +209,19 @@ int main()
     ////////draw objects////////
     for(int n=startPos+300; n>startPos; n--)
       lines[n%N].drawSprite(app);
+
+    // --- Draw player car at bottom center, offset by playerX ---
+    // float carScreenX = width / 2 + playerX * roadW * 0.3f; // Adjust 0.3f for sensitivity
+    // float carScreenY = height * 0.8f;
+    // carSprite.setPosition(carScreenX - carSprite.getGlobalBounds().width / 2,
+    //                       carScreenY - carSprite.getGlobalBounds().height / 2);
+    
+    float carScreenX = width / 2;
+    float carScreenY = height * 0.8f;
+    carSprite.setPosition(carScreenX - carSprite.getGlobalBounds().width / 2,
+                      carScreenY - carSprite.getGlobalBounds().height / 2);
+
+    app.draw(carSprite);
 
     app.display();
     }
