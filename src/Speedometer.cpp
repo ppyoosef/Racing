@@ -13,8 +13,8 @@ Speedometer::Speedometer(float x, float y, const sf::Font& font) : position(x, y
     dial.setOrigin(dial.getRadius(), dial.getRadius());
     dial.setPosition(position);
 
-    needle.setSize(sf::Vector2f(70, 4));
-    needle.setFillColor(sf::Color::Red);
+    needle.setSize(sf::Vector2f(90, 2));
+    needle.setFillColor(sf::Color(220, 0, 0));
     needle.setOrigin(10, 2);
     needle.setPosition(position);
 
@@ -94,6 +94,13 @@ void Speedometer::draw(sf::RenderWindow& window, const sf::Font& font) {
     float angle = startAngle + (currentSpeed / maxSpeed) * (endAngle - startAngle);
     needle.setRotation(angle);
     window.draw(needle);
+
+    // Draw center cap
+    sf::CircleShape centerCap(8);
+    centerCap.setFillColor(sf::Color::Red);
+    centerCap.setOrigin(8, 8);
+    centerCap.setPosition(position);
+    window.draw(centerCap);
 
     // Draw speed digits
     window.draw(speedText);

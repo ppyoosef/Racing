@@ -34,7 +34,9 @@ void drawQuad(RenderWindow &w, Color c, int x1, int y1, int w1, int x2, int y2, 
 
 int main()
 {
-  RenderWindow app(VideoMode(width, height), "Racing!");
+  ContextSettings settings;
+  settings.antialiasingLevel = 8; // 4 or 8 for smooth edges
+  RenderWindow app(sf::VideoMode(width, height), "Racing!", sf::Style::Default, settings);
   app.setFramerateLimit(60);
 
   Texture t[50];
@@ -233,9 +235,6 @@ int main()
 
     // app.draw(speedText);
 
-    speedometer.setSpeed(static_cast<float>(std::abs(currentSpeed)));
-    speedometer.draw(app, speedFont);
-
     ///////draw road////////
     for (int n = startPos; n < startPos + 300; n++)
     {
@@ -278,6 +277,10 @@ int main()
     playerCar.setAngle(carAngle);
     playerCar.setPosition(width / 2, height * 0.8f);
     playerCar.draw(app);
+
+    // Draw the speedometer
+    speedometer.setSpeed(static_cast<float>(std::abs(currentSpeed)));
+    speedometer.draw(app, speedFont);
 
     app.display();
   }
