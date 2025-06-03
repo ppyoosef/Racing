@@ -2,6 +2,11 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <string>
+#include <thread>
+#include <chrono>
+
 #include "Speedometer.hpp"
 #include "Car.hpp"
 #include "Line.hpp"
@@ -32,12 +37,59 @@ void drawQuad(RenderWindow &w, Color c, int x1, int y1, int w1, int x2, int y2, 
   w.draw(shape);
 }
 
+// Utility function for centered text
+void centerText(sf::Text &text, float x, float y)
+{
+  sf::FloatRect bounds = text.getLocalBounds();
+  text.setOrigin(bounds.width / 2, bounds.height / 2);
+  text.setPosition(x, y);
+}
+
+enum GameState
+{
+  LOADING,
+  MENU,
+  SETTINGS,
+  GAME,
+  QUIT
+};
+
 int main()
 {
   ContextSettings settings;
   settings.antialiasingLevel = 8; // 4 or 8 for smooth edges
   RenderWindow app(sf::VideoMode(width, height), "Racing!", sf::Style::Default, settings);
   app.setFramerateLimit(60);
+
+  // Add after loading textures, before main loop
+  Font speedFont;
+  if (!speedFont.loadFromFile("fonts/DS-DIGIT.ttf"))
+  {
+    std::cout << "Failed to load DS-DIGIT.ttf\n";
+  }
+
+  // --- Loading Screen ---
+  GameState state = LOADING;
+  Text loadingText("Loading...", speedFont, 48);
+  centerText(loadingText, width / 2, height / 2);
+
+  // Simulate loading resources
+  app.clear(Color::Black);
+  app.draw(loadingText);
+  app.display();
+  std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // Simulate loading
+
+  // --- Menu Variables ---
+  state = MENU;
+  int menuIndex = 0;
+  vector<string> menuItems = {"Start Game", "Settings", "Quit"};
+
+  // --- Settings Variables ---
+  int carIndex = 0;
+  int mapIndex = 0;
+  vector<string> carOptions = {"Red Car", "Blue Car", "Green Car"};
+  vector<string> mapOptions = {"Classic", "Desert", "Snow"};
+  int settingsIndex = 0;
 
   Texture t[50];
   Sprite object[50];
@@ -60,18 +112,15 @@ int main()
 
   // --- Load and play engine sound ---
   Music engineSound;
-  if (!engineSound.openFromFile("sounds/engine.ogg")) {
+  if (!engineSound.openFromFile("sounds/engine.ogg"))
+  {
     std::cout << "Failed to load engine.ogg\n";
-  } else {
+  }
+  else
+  {
     engineSound.setVolume(50); // 0-100
     engineSound.setLoop(true);
-    engineSound.play();
-  }
-
-  // Add after loading textures, before main loop
-  Font speedFont;
-  if (!speedFont.loadFromFile("fonts/DS-DIGIT.ttf")) {
-    std::cout << "Failed to load DS-DIGIT.ttf\n";
+    // engineSound.play();
   }
 
   Text speedText;
@@ -84,7 +133,8 @@ int main()
 
   std::vector<Line> lines;
 
-  for (int i = 0; i < 1600; i++) {
+  for (int i = 0; i < 1600; i++)
+  {
     Line line;
     line.z = i * segL;
 
@@ -140,149 +190,279 @@ int main()
         app.close();
     }
 
-    int speed = 0;
-    static int currentSpeed = 0;
-
-    if (Keyboard::isKeyPressed(Keyboard::Right))
-      playerX += 0.1;
-    if (Keyboard::isKeyPressed(Keyboard::Left))
-      playerX -= 0.1;
-    // if (Keyboard::isKeyPressed(Keyboard::Up)) speed=200;
-    // if (Keyboard::isKeyPressed(Keyboard::Down)) speed=-200;
-    // if (Keyboard::isKeyPressed(Keyboard::Tab)) speed*=3;
-    // if (Keyboard::isKeyPressed(Keyboard::W)) H+=100;
-    // if (Keyboard::isKeyPressed(Keyboard::S)) H-=100;
-
-    // Acceleration and braking logic
-    if (Keyboard::isKeyPressed(Keyboard::Up))
+    if (state == MENU)
     {
-      currentSpeed += ACCELERATION;
-      if (currentSpeed > MAX_FORWARD_SPEED)
-        currentSpeed = MAX_FORWARD_SPEED;
-    }
-    else if (Keyboard::isKeyPressed(Keyboard::Down))
-    {
-      if (currentSpeed > 0)
+      // --- Main Menu ---
+      app.clear(Color(30, 30, 30));
+      Text title("Racing Game", speedFont, 60);
+      centerText(title, width / 2, 120);
+      app.draw(title);
+
+      for (size_t i = 0; i < menuItems.size(); ++i)
       {
-        currentSpeed -= BRAKE_DECELERATION; // Braking
-        if (currentSpeed < 0)
-          currentSpeed = 0;
+        Text item(menuItems[i], speedFont, 40);
+        item.setFillColor(i == menuIndex ? Color::Red : Color::White);
+        centerText(item, width / 2, 250 + i * 70);
+        app.draw(item);
+      }
+      app.display();
+
+      // --- Menu Navigation ---
+      if (Keyboard::isKeyPressed(Keyboard::Up))
+      {
+        menuIndex = (menuIndex + menuItems.size() - 1) % menuItems.size();
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+      }
+      if (Keyboard::isKeyPressed(Keyboard::Down))
+      {
+        menuIndex = (menuIndex + 1) % menuItems.size();
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+      }
+      if (Keyboard::isKeyPressed(Keyboard::Enter) || Keyboard::isKeyPressed(Keyboard::Return))
+      {
+        if (menuIndex == 0)
+          state = GAME;
+        if (menuIndex == 1)
+          state = SETTINGS;
+        if (menuIndex == 2)
+          state = QUIT;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      }
+    }
+    else if (state == SETTINGS)
+    {
+      // --- Settings Menu ---
+      app.clear(Color(20, 20, 40));
+      Text title("Settings", speedFont, 54);
+      centerText(title, width / 2, 100);
+      app.draw(title);
+
+      // Car selection
+      Text carLabel("Car:", speedFont, 36);
+      centerText(carLabel, width / 2 - 120, 220);
+      app.draw(carLabel);
+      Text carChoice(carOptions[carIndex], speedFont, 36);
+      carChoice.setFillColor(settingsIndex == 0 ? Color::Red : Color::White);
+      centerText(carChoice, width / 2 + 80, 220);
+      app.draw(carChoice);
+
+      // Map selection
+      Text mapLabel("Map:", speedFont, 36);
+      centerText(mapLabel, width / 2 - 120, 300);
+      app.draw(mapLabel);
+      Text mapChoice(mapOptions[mapIndex], speedFont, 36);
+      mapChoice.setFillColor(settingsIndex == 1 ? Color::Red : Color::White);
+      centerText(mapChoice, width / 2 + 80, 300);
+      app.draw(mapChoice);
+
+      // Back option
+      Text back("Back", speedFont, 36);
+      back.setFillColor(settingsIndex == 2 ? Color::Red : Color::White);
+      centerText(back, width / 2, 400);
+      app.draw(back);
+
+      app.display();
+
+      // --- Settings Navigation ---
+      if (Keyboard::isKeyPressed(Keyboard::Up))
+      {
+        settingsIndex = (settingsIndex + 2) % 3;
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+      }
+      if (Keyboard::isKeyPressed(Keyboard::Down))
+      {
+        settingsIndex = (settingsIndex + 1) % 3;
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+      }
+      if (Keyboard::isKeyPressed(Keyboard::Left))
+      {
+        if (settingsIndex == 0)
+          carIndex = (carIndex + carOptions.size() - 1) % carOptions.size();
+        if (settingsIndex == 1)
+          mapIndex = (mapIndex + mapOptions.size() - 1) % mapOptions.size();
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+      }
+      if (Keyboard::isKeyPressed(Keyboard::Right))
+      {
+        if (settingsIndex == 0)
+          carIndex = (carIndex + 1) % carOptions.size();
+        if (settingsIndex == 1)
+          mapIndex = (mapIndex + 1) % mapOptions.size();
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+      }
+      if (Keyboard::isKeyPressed(Keyboard::Enter) || Keyboard::isKeyPressed(Keyboard::Return))
+      {
+        if (settingsIndex == 2)
+          state = MENU;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      }
+    }
+    else if (state == GAME)
+    {
+      // --- Your existing game code goes here ---
+      // Use carIndex and mapIndex to select car/map
+      // When user wants to return to menu, set state = MENU;
+      // For demonstration, we'll just clear and show a message:
+      app.clear(Color::Black);
+      Text msg("Game Running!\nPress ESC to return to menu.", speedFont, 36);
+      centerText(msg, width / 2, height / 2);
+      app.draw(msg);
+      // app.display();
+
+      if (Keyboard::isKeyPressed(Keyboard::Escape))
+      {
+        state = MENU;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      }
+
+      int speed = 0;
+      static int currentSpeed = 0;
+
+      if (Keyboard::isKeyPressed(Keyboard::Right))
+        playerX += 0.1;
+      if (Keyboard::isKeyPressed(Keyboard::Left))
+        playerX -= 0.1;
+      // if (Keyboard::isKeyPressed(Keyboard::Up)) speed=200;
+      // if (Keyboard::isKeyPressed(Keyboard::Down)) speed=-200;
+      // if (Keyboard::isKeyPressed(Keyboard::Tab)) speed*=3;
+      // if (Keyboard::isKeyPressed(Keyboard::W)) H+=100;
+      // if (Keyboard::isKeyPressed(Keyboard::S)) H-=100;
+
+      // Acceleration and braking logic
+      if (Keyboard::isKeyPressed(Keyboard::Up))
+      {
+        currentSpeed += ACCELERATION;
+        if (currentSpeed > MAX_FORWARD_SPEED)
+          currentSpeed = MAX_FORWARD_SPEED;
+      }
+      else if (Keyboard::isKeyPressed(Keyboard::Down))
+      {
+        if (currentSpeed > 0)
+        {
+          currentSpeed -= BRAKE_DECELERATION; // Braking
+          if (currentSpeed < 0)
+            currentSpeed = 0;
+        }
+        else
+        {
+          currentSpeed -= ACCELERATION; // Reverse
+          if (currentSpeed < MAX_REVERSE_SPEED)
+            currentSpeed = MAX_REVERSE_SPEED;
+        }
       }
       else
       {
-        currentSpeed -= ACCELERATION; // Reverse
-        if (currentSpeed < MAX_REVERSE_SPEED)
-          currentSpeed = MAX_REVERSE_SPEED;
-      }
-    }
-    else
-    {
-      // Natural deceleration (friction)
-      if (currentSpeed > 0)
-      {
-        currentSpeed -= NATURAL_DECELERATION;
-        if (currentSpeed < 0)
-          currentSpeed = 0;
-      }
-      else if (currentSpeed < 0)
-      {
-        currentSpeed += NATURAL_DECELERATION;
+        // Natural deceleration (friction)
         if (currentSpeed > 0)
-          currentSpeed = 0;
+        {
+          currentSpeed -= NATURAL_DECELERATION;
+          if (currentSpeed < 0)
+            currentSpeed = 0;
+        }
+        else if (currentSpeed < 0)
+        {
+          currentSpeed += NATURAL_DECELERATION;
+          if (currentSpeed > 0)
+            currentSpeed = 0;
+        }
       }
+
+      // ...inside your main loop, after updating playerX...
+      camX += (playerX * roadW - camX) * 0.1f; // 0.1f is the smoothing factor
+
+      // After updating speed, control the engine sound:
+      if (currentSpeed != 0)
+      {
+        if (engineSound.getStatus() != sf::Music::Playing)
+          engineSound.play();
+      }
+      else
+      {
+        if (engineSound.getStatus() == sf::Music::Playing)
+          engineSound.pause();
+      }
+
+      engineSound.setPitch(1.0f + std::abs(currentSpeed) * 0.001f);
+
+      // pos+=speed;
+      pos += currentSpeed;
+
+      while (pos >= N * segL)
+        pos -= N * segL;
+      while (pos < 0)
+        pos += N * segL;
+
+      app.clear(Color(105, 205, 4));
+      app.draw(sBackground);
+      int startPos = pos / segL;
+      int camH = lines[startPos].y + H;
+      if (speed > 0)
+        sBackground.move(-lines[startPos].curve * 2, 0);
+      if (speed < 0)
+        sBackground.move(lines[startPos].curve * 2, 0);
+
+      int maxy = height;
+      float x = 0, dx = 0;
+
+      // Update speed text
+      speedText.setString(std::to_string(std::abs(currentSpeed) / 10));         // Adjust divisor for display units
+      speedText.setPosition(width - speedText.getLocalBounds().width - 40, 40); // Top-right with margin
+
+      // app.draw(speedText);
+
+      ///////draw road////////
+      for (int n = startPos; n < startPos + 300; n++)
+      {
+        Line &l = lines[n % N];
+        l.project(playerX * roadW - x, camH, startPos * segL - (n >= N ? N * segL : 0));
+        // ...in your road projection loop, use camX instead of playerX*roadW...
+        // l.project(camX - x, camH, startPos*segL - (n>=N?N*segL:0));
+        x += dx;
+        dx += l.curve;
+
+        l.clip = maxy;
+        if (l.Y >= maxy)
+          continue;
+        maxy = l.Y;
+
+        Color grass = (n / 3) % 2 ? Color(16, 200, 16) : Color(0, 154, 0);
+        Color rumble = (n / 3) % 2 ? Color(255, 255, 255) : Color(0, 0, 0);
+        Color road = (n / 3) % 2 ? Color(107, 107, 107) : Color(105, 105, 105);
+
+        Line p = lines[(n - 1) % N]; // previous line
+
+        drawQuad(app, grass, 0, p.Y, width, 0, l.Y, width);
+        drawQuad(app, rumble, p.X, p.Y, p.W * 1.2, l.X, l.Y, l.W * 1.2);
+        drawQuad(app, road, p.X, p.Y, p.W, l.X, l.Y, l.W);
+      }
+
+      ////////draw objects////////
+      for (int n = startPos + 300; n > startPos; n--)
+        lines[n % N].drawSprite(app);
+
+      float carScreenX = width / 2;
+      float carScreenY = height * 0.8f;
+      float carAngle = 0.0f;
+
+      if (Keyboard::isKeyPressed(Keyboard::Left))
+        carAngle = -3.0f;
+      else if (Keyboard::isKeyPressed(Keyboard::Right))
+        carAngle = 3.0f;
+
+      playerCar.setAngle(carAngle);
+      playerCar.setPosition(width / 2, height * 0.8f);
+      playerCar.draw(app);
+
+      // Draw the speedometer
+      speedometer.setSpeed(static_cast<float>(std::abs(currentSpeed)));
+      speedometer.draw(app, speedFont);
+
+      app.display();
     }
-
-    // ...inside your main loop, after updating playerX...
-    camX += (playerX * roadW - camX) * 0.1f; // 0.1f is the smoothing factor
-
-    // After updating speed, control the engine sound:
-    if (currentSpeed != 0)
+    else if (state == QUIT)
     {
-      if (engineSound.getStatus() != sf::Music::Playing)
-        engineSound.play();
+      app.close();
     }
-    else
-    {
-      if (engineSound.getStatus() == sf::Music::Playing)
-        engineSound.pause();
-    }
-
-    engineSound.setPitch(1.0f + std::abs(currentSpeed) * 0.001f);
-
-    // pos+=speed;
-    pos += currentSpeed;
-
-    while (pos >= N * segL)
-      pos -= N * segL;
-    while (pos < 0)
-      pos += N * segL;
-
-    app.clear(Color(105, 205, 4));
-    app.draw(sBackground);
-    int startPos = pos / segL;
-    int camH = lines[startPos].y + H;
-    if (speed > 0)
-      sBackground.move(-lines[startPos].curve * 2, 0);
-    if (speed < 0)
-      sBackground.move(lines[startPos].curve * 2, 0);
-
-    int maxy = height;
-    float x = 0, dx = 0;
-
-    // Update speed text
-    speedText.setString(std::to_string(std::abs(currentSpeed) / 10));         // Adjust divisor for display units
-    speedText.setPosition(width - speedText.getLocalBounds().width - 40, 40); // Top-right with margin
-
-    // app.draw(speedText);
-
-    ///////draw road////////
-    for (int n = startPos; n < startPos + 300; n++)
-    {
-      Line &l = lines[n % N];
-      l.project(playerX * roadW - x, camH, startPos * segL - (n >= N ? N * segL : 0));
-      // ...in your road projection loop, use camX instead of playerX*roadW...
-      // l.project(camX - x, camH, startPos*segL - (n>=N?N*segL:0));
-      x += dx;
-      dx += l.curve;
-
-      l.clip = maxy;
-      if (l.Y >= maxy)
-        continue;
-      maxy = l.Y;
-
-      Color grass = (n / 3) % 2 ? Color(16, 200, 16) : Color(0, 154, 0);
-      Color rumble = (n / 3) % 2 ? Color(255, 255, 255) : Color(0, 0, 0);
-      Color road = (n / 3) % 2 ? Color(107, 107, 107) : Color(105, 105, 105);
-
-      Line p = lines[(n - 1) % N]; // previous line
-
-      drawQuad(app, grass, 0, p.Y, width, 0, l.Y, width);
-      drawQuad(app, rumble, p.X, p.Y, p.W * 1.2, l.X, l.Y, l.W * 1.2);
-      drawQuad(app, road, p.X, p.Y, p.W, l.X, l.Y, l.W);
-    }
-
-    ////////draw objects////////
-    for (int n = startPos + 300; n > startPos; n--)
-      lines[n % N].drawSprite(app);
-
-    float carScreenX = width / 2;
-    float carScreenY = height * 0.8f;
-    float carAngle = 0.0f;
-
-    if (Keyboard::isKeyPressed(Keyboard::Left))
-      carAngle = -3.0f;
-    else if (Keyboard::isKeyPressed(Keyboard::Right))
-      carAngle = 3.0f;
-
-    playerCar.setAngle(carAngle);
-    playerCar.setPosition(width / 2, height * 0.8f);
-    playerCar.draw(app);
-
-    // Draw the speedometer
-    speedometer.setSpeed(static_cast<float>(std::abs(currentSpeed)));
-    speedometer.draw(app, speedFont);
-
-    app.display();
   }
 
   return 0;
