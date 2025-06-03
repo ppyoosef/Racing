@@ -5,9 +5,9 @@
 #include <sstream>
 
 Speedometer::Speedometer(float x, float y, const sf::Font& font) : position(x, y) {
-    dial.setRadius(80);
+    dial.setRadius(120);
     dial.setPointCount(100);
-    dial.setFillColor(sf::Color(30, 30, 30));
+    dial.setFillColor(sf::Color(255, 255, 255));
     dial.setOutlineThickness(4);
     dial.setOutlineColor(sf::Color::Red);
     dial.setOrigin(dial.getRadius(), dial.getRadius());

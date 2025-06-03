@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cmath>
 #include "Speedometer.hpp"
+#include "Car.hpp"
+#include "Line.hpp"
 
 using namespace sf;
 using namespace std;
@@ -15,9 +17,9 @@ float camD = 0.84; // camera depth
 
 const int MAX_FORWARD_SPEED = 1000;
 const int MAX_REVERSE_SPEED = -200;
-const int ACCELERATION = 1;
+const int ACCELERATION = 2;
 const int BRAKE_DECELERATION = 5;
-const int NATURAL_DECELERATION = 5;
+const int NATURAL_DECELERATION = 4;
 
 void drawQuad(RenderWindow &w, Color c, int x1, int y1, int w1, int x2, int y2, int w2)
 {
@@ -29,53 +31,6 @@ void drawQuad(RenderWindow &w, Color c, int x1, int y1, int w1, int x2, int y2, 
   shape.setPoint(3, Vector2f(x1 + w1, y1));
   w.draw(shape);
 }
-
-struct Line
-{
-  float x, y, z; // 3d center of line
-  float X, Y, W; // screen coord
-  float curve, spriteX, clip, scale;
-  Sprite sprite;
-
-  Line()
-  {
-    spriteX = curve = x = y = z = 0;
-  }
-
-  void project(int camX, int camY, int camZ)
-  {
-    scale = camD / (z - camZ);
-    X = (1 + scale * (x - camX)) * width / 2;
-    Y = (1 - scale * (y - camY)) * height / 2;
-    W = scale * roadW * width / 2;
-  }
-
-  void drawSprite(RenderWindow &app)
-  {
-    Sprite s = sprite;
-    int w = s.getTextureRect().width;
-    int h = s.getTextureRect().height;
-
-    float destX = X + scale * spriteX * width / 2;
-    float destY = Y + 4;
-    float destW = w * W / 266;
-    float destH = h * W / 266;
-
-    destX += destW * spriteX; // offsetX
-    destY += destH * (-1);    // offsetY
-
-    float clipH = destY + destH - clip;
-    if (clipH < 0)
-      clipH = 0;
-
-    if (clipH >= destH)
-      return;
-    s.setTextureRect(IntRect(0, 0, w, h - h * clipH / destH));
-    s.setScale(destW / w, destH / h);
-    s.setPosition(destX, destY);
-    app.draw(s);
-  }
-};
 
 int main()
 {
@@ -99,19 +54,13 @@ int main()
   sBackground.setPosition(-2000, 0);
 
   // --- Add player car texture and sprite ---
-  Texture carTexture;
-  carTexture.loadFromFile("images/car.png");
-  carTexture.setSmooth(true);
-  Sprite carSprite(carTexture);
+  Car playerCar("images/car.png", width / 2, height * 0.8f);
 
   // --- Load and play engine sound ---
   Music engineSound;
-  if (!engineSound.openFromFile("sounds/engine.ogg"))
-  {
+  if (!engineSound.openFromFile("sounds/engine.ogg")) {
     std::cout << "Failed to load engine.ogg\n";
-  }
-  else
-  {
+  } else {
     engineSound.setVolume(50); // 0-100
     engineSound.setLoop(true);
     engineSound.play();
@@ -119,8 +68,7 @@ int main()
 
   // Add after loading textures, before main loop
   Font speedFont;
-  if (!speedFont.loadFromFile("fonts/DS-DIGIT.ttf"))
-  {
+  if (!speedFont.loadFromFile("fonts/DS-DIGIT.ttf")) {
     std::cout << "Failed to load DS-DIGIT.ttf\n";
   }
 
@@ -130,12 +78,11 @@ int main()
   speedText.setFillColor(Color::Red);
   speedText.setStyle(Text::Bold);
 
-  Speedometer speedometer(width - 120, 120, speedFont);
+  Speedometer speedometer(width - 150, 150, speedFont);
 
   std::vector<Line> lines;
 
-  for (int i = 0; i < 1600; i++)
-  {
+  for (int i = 0; i < 1600; i++) {
     Line line;
     line.z = i * segL;
 
@@ -281,13 +228,13 @@ int main()
     float x = 0, dx = 0;
 
     // Update speed text
-    speedText.setString(std::to_string(std::abs(currentSpeed) / 10)); // Adjust divisor for display units
+    speedText.setString(std::to_string(std::abs(currentSpeed) / 10));         // Adjust divisor for display units
     speedText.setPosition(width - speedText.getLocalBounds().width - 40, 40); // Top-right with margin
 
-    app.draw(speedText);
+    // app.draw(speedText);
 
     speedometer.setSpeed(static_cast<float>(std::abs(currentSpeed)));
-    // speedometer.draw(app, speedFont);
+    speedometer.draw(app, speedFont);
 
     ///////draw road////////
     for (int n = startPos; n < startPos + 300; n++)
@@ -319,31 +266,18 @@ int main()
     for (int n = startPos + 300; n > startPos; n--)
       lines[n % N].drawSprite(app);
 
-    // --- Draw player car at bottom center, offset by playerX ---
-    // float carScreenX = width / 2 + playerX * roadW * 0.3f; // Adjust 0.3f for sensitivity
-    // float carScreenY = height * 0.8f;
-    // carSprite.setPosition(carScreenX - carSprite.getGlobalBounds().width / 2,
-    //                       carScreenY - carSprite.getGlobalBounds().height / 2);
-
-    carSprite.setOrigin(carSprite.getLocalBounds().width / 2, carSprite.getLocalBounds().height / 2);
-
     float carScreenX = width / 2;
     float carScreenY = height * 0.8f;
-    carSprite.setPosition(carScreenX, carScreenY);
-
     float carAngle = 0.0f;
+
     if (Keyboard::isKeyPressed(Keyboard::Left))
-      carAngle = -3.0f; // Turn left
+      carAngle = -3.0f;
     else if (Keyboard::isKeyPressed(Keyboard::Right))
-      carAngle = 3.0f; // Turn right
-    carSprite.setRotation(carAngle);
+      carAngle = 3.0f;
 
-    // float carScreenX = width / 2;
-    // float carScreenY = height * 0.8f;
-    // carSprite.setPosition(carScreenX - carSprite.getGlobalBounds().width / 2,
-    //                       carScreenY - carSprite.getGlobalBounds().height / 2);
-
-    app.draw(carSprite);
+    playerCar.setAngle(carAngle);
+    playerCar.setPosition(width / 2, height * 0.8f);
+    playerCar.draw(app);
 
     app.display();
   }
