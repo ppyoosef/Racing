@@ -10,6 +10,10 @@
 #include "Speedometer.hpp"
 #include "Car.hpp"
 #include "Line.hpp"
+#include "LoadingView.hpp"
+#include "MenuView.hpp"
+#include "SettingsView.hpp"
+#include "GameView.hpp"
 
 using namespace sf;
 using namespace std;
@@ -58,7 +62,7 @@ int main()
 {
   ContextSettings settings;
   settings.antialiasingLevel = 8; // 4 or 8 for smooth edges
-  RenderWindow app(sf::VideoMode(width, height), "Racing!", sf::Style::Default, settings);
+  RenderWindow app(sf::VideoMode(width, height), "Racing!", sf::Style::Titlebar | sf::Style::Close, settings);
   app.setFramerateLimit(60);
 
   // Add after loading textures, before main loop
@@ -70,26 +74,22 @@ int main()
 
   // --- Loading Screen ---
   GameState state = LOADING;
-  Text loadingText("Loading...", speedFont, 48);
-  centerText(loadingText, width / 2, height / 2);
-
-  // Simulate loading resources
-  app.clear(Color::Black);
-  app.draw(loadingText);
-  app.display();
-  std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // Simulate loading
-
-  // --- Menu Variables ---
-  state = MENU;
-  int menuIndex = 0;
   vector<string> menuItems = {"Start Game", "Settings", "Quit"};
+  vector<std::string> carOptions = {"Red Car", "Blue Car", "Green Car"};
+  vector<std::string> mapOptions = {"Classic", "Desert", "Snow"};
 
+  
+  int menuIndex = 0;
+  
   // --- Settings Variables ---
   int carIndex = 0;
   int mapIndex = 0;
-  vector<string> carOptions = {"Red Car", "Blue Car", "Green Car"};
-  vector<string> mapOptions = {"Classic", "Desert", "Snow"};
   int settingsIndex = 0;
+
+  LoadingView loadingView(speedFont, width, height);
+  MenuView menuView(speedFont, width, height);
+  SettingsView settingsView(speedFont, width, height, carOptions, mapOptions);
+  GameView gameView(speedFont, width, height);
 
   Texture t[50];
   Sprite object[50];
@@ -188,113 +188,47 @@ int main()
     {
       if (e.type == Event::Closed)
         app.close();
+
+      // Pass event to current view
+      if (state == MENU)
+        menuView.handleEvent(e);
+      if (state == SETTINGS)
+        settingsView.handleEvent(e);
+      if (state == GAME)
+        gameView.handleEvent(e);
     }
 
-    if (state == MENU)
+    if (state == LOADING)
     {
-      // --- Main Menu ---
-      app.clear(Color(30, 30, 30));
-      Text title("Racing Game", speedFont, 60);
-      centerText(title, width / 2, 120);
-      app.draw(title);
-
-      for (size_t i = 0; i < menuItems.size(); ++i)
-      {
-        Text item(menuItems[i], speedFont, 40);
-        item.setFillColor(i == menuIndex ? Color::Red : Color::White);
-        centerText(item, width / 2, 250 + i * 70);
-        app.draw(item);
-      }
+      loadingView.draw(app);
       app.display();
-
-      // --- Menu Navigation ---
-      if (Keyboard::isKeyPressed(Keyboard::Up))
+      std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // Simulate loading
+      state = MENU;                                                 // Switch to menu after loading
+    }
+    else if (state == MENU)
+    {
+      menuView.draw(app);
+      app.display();
+      if (menuView.isEnterPressed())
       {
-        menuIndex = (menuIndex + menuItems.size() - 1) % menuItems.size();
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-      }
-      if (Keyboard::isKeyPressed(Keyboard::Down))
-      {
-        menuIndex = (menuIndex + 1) % menuItems.size();
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-      }
-      if (Keyboard::isKeyPressed(Keyboard::Enter) || Keyboard::isKeyPressed(Keyboard::Return))
-      {
-        if (menuIndex == 0)
+        int selected = menuView.getSelected();
+        if (selected == 0)
           state = GAME;
-        if (menuIndex == 1)
+        else if (selected == 1)
           state = SETTINGS;
-        if (menuIndex == 2)
+        else if (selected == 2)
           state = QUIT;
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        menuView.resetEnter();
       }
     }
     else if (state == SETTINGS)
     {
-      // --- Settings Menu ---
-      app.clear(Color(20, 20, 40));
-      Text title("Settings", speedFont, 54);
-      centerText(title, width / 2, 100);
-      app.draw(title);
-
-      // Car selection
-      Text carLabel("Car:", speedFont, 36);
-      centerText(carLabel, width / 2 - 120, 220);
-      app.draw(carLabel);
-      Text carChoice(carOptions[carIndex], speedFont, 36);
-      carChoice.setFillColor(settingsIndex == 0 ? Color::Red : Color::White);
-      centerText(carChoice, width / 2 + 80, 220);
-      app.draw(carChoice);
-
-      // Map selection
-      Text mapLabel("Map:", speedFont, 36);
-      centerText(mapLabel, width / 2 - 120, 300);
-      app.draw(mapLabel);
-      Text mapChoice(mapOptions[mapIndex], speedFont, 36);
-      mapChoice.setFillColor(settingsIndex == 1 ? Color::Red : Color::White);
-      centerText(mapChoice, width / 2 + 80, 300);
-      app.draw(mapChoice);
-
-      // Back option
-      Text back("Back", speedFont, 36);
-      back.setFillColor(settingsIndex == 2 ? Color::Red : Color::White);
-      centerText(back, width / 2, 400);
-      app.draw(back);
-
+      settingsView.draw(app);
       app.display();
-
-      // --- Settings Navigation ---
-      if (Keyboard::isKeyPressed(Keyboard::Up))
+      if (settingsView.isBackSelected())
       {
-        settingsIndex = (settingsIndex + 2) % 3;
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-      }
-      if (Keyboard::isKeyPressed(Keyboard::Down))
-      {
-        settingsIndex = (settingsIndex + 1) % 3;
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-      }
-      if (Keyboard::isKeyPressed(Keyboard::Left))
-      {
-        if (settingsIndex == 0)
-          carIndex = (carIndex + carOptions.size() - 1) % carOptions.size();
-        if (settingsIndex == 1)
-          mapIndex = (mapIndex + mapOptions.size() - 1) % mapOptions.size();
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-      }
-      if (Keyboard::isKeyPressed(Keyboard::Right))
-      {
-        if (settingsIndex == 0)
-          carIndex = (carIndex + 1) % carOptions.size();
-        if (settingsIndex == 1)
-          mapIndex = (mapIndex + 1) % mapOptions.size();
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
-      }
-      if (Keyboard::isKeyPressed(Keyboard::Enter) || Keyboard::isKeyPressed(Keyboard::Return))
-      {
-        if (settingsIndex == 2)
-          state = MENU;
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        state = MENU;
+        settingsView.resetBack();
       }
     }
     else if (state == GAME)
