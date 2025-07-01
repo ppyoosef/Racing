@@ -69,7 +69,7 @@ int main()
   // --- Loading Screen ---
   GameState state = LOADING;
   vector<string> menuItems = {"Start Game", "Settings", "Quit"};
-  vector<std::string> carOptions = {"Red Car", "Blue Car", "Green Car"};
+  vector<std::string> carOptions = {"Red Car", "Blue Car", "White Car"};
   vector<std::string> mapOptions = {"Classic", "Desert", "Snow"};
 
   int menuIndex = 0;
@@ -82,7 +82,7 @@ int main()
   LoadingView loadingView(speedFont, width, height);
   MenuView menuView(speedFont, width, height);
   SettingsView settingsView(speedFont, width, height, carOptions, mapOptions);
-  GameView gameView(speedFont, width, height, 0, 0);
+  std::unique_ptr<GameView> gameView = std::make_unique<GameView>(speedFont, width, height, carIndex, mapIndex);
 
   float playerX = 0;
   int pos = 0;
@@ -103,7 +103,7 @@ int main()
       if (state == SETTINGS)
         settingsView.handleEvent(e);
       if (state == GAME)
-        gameView.handleEvent(e);
+        gameView->handleEvent(e);
     }
 
     if (state == LOADING)
@@ -120,9 +120,10 @@ int main()
       if (menuView.isEnterPressed())
       {
         int selected = menuView.getSelected();
-        if (selected == 0)
+        if (selected == 0) {
+          gameView = std::make_unique<GameView>(speedFont, width, height, carIndex, mapIndex); // Recreate gameView
           state = GAME;
-        else if (selected == 1)
+        } else if (selected == 1)
           state = SETTINGS;
         else if (selected == 2)
           state = QUIT;
@@ -135,18 +136,19 @@ int main()
       app.display();
       if (settingsView.isBackSelected())
       {
+        carIndex = settingsView.getCarIndex();
         state = MENU;
         settingsView.resetBack();
       }
     }
     else if (state == GAME)
     {
-      gameView.update();
-      gameView.draw(app);
-      if (gameView.isEscapePressed())
+      gameView->update();
+      gameView->draw(app);
+      if (gameView->isEscapePressed())
       {
         state = MENU;
-        gameView.resetEscape();
+        gameView->resetEscape();
       }
       app.display();
     }

@@ -15,9 +15,16 @@
 using namespace sf;
 using namespace std;
 
+// Car texture selection
+std::vector<std::string> carFiles = {
+    "images/car_red.png",
+    "images/car_blue.png",
+    "images/car_white.png"
+};
+
 GameView::GameView(sf::Font &font, int width, int height, int carIndex, int mapIndex)
     : font(font), width(width), height(height),
-      playerCar("images/car.png", width / 2, height * 0.8f),
+      playerCar(carFiles[carIndex], width / 2, height * 0.8f),
       speedometer(width - 130, 130, font),
       carIndex(carIndex), mapIndex(mapIndex)
 {
