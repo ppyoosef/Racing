@@ -1,3 +1,8 @@
 # Racing App 
 
-Racing app in C++ + SFML
+Racing game in CPP + SFML
+
+### Screens
+
+![Main Menu](images/home.png)
+![Gameplay](images/game.png)
