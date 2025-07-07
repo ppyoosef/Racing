@@ -4,5 +4,5 @@ Racing game in CPP + SFML
 
 ### Screens
 
-![Main Menu](images/home.png)
-![Gameplay](images/game.png)
+![Main Menu](screenshots/home-screen.png)
+![Gameplay](screenshots/game-screen.png)
